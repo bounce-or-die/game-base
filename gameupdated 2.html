@@ -1,0 +1,233 @@
+<html>
+
+<head>
+
+    <script src="https://threejs.org/build/three.min.js"></script>
+    <script src="js/sky.js"></script>
+    <script src="js/OrbitControls.js"></script>
+
+    <!-- <script src="/js/dat.gui.module.js"></script>  -->
+
+    <style>
+        #container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+
+    <script>
+        var track_geometry, track_material;
+        var track_array = [];
+        var collision;
+        var star_geometry, star_material;
+        var star_array = [];
+        const container = document.getElementById('container');
+        var audio = document.createElement('audio');
+  var source = document.createElement('source');
+  source.src = '/sound/play.mp3';
+  audio.appendChild(source);
+  audio.play();
+   var source1 = document.createElement('source');
+   source1.src = '/sound/out.mp3';
+   audio.appendChild(source1);
+        
+        // SCENE CFREATED
+        const scene = new THREE.Scene();
+        var sky, sunSphere;
+        scene.background = new THREE.Color('skyblue');
+        //CAMERA CREATED
+        const camera = new THREE.PerspectiveCamera(70, container.clientWidth / container.clientHeight, 0.01, 300);
+        camera.position.set(0, 20, 6);
+        // camera.rotateX(-Math.PI / 8);
+        // SKY CREATED
+        function createSky() {
+            // Add Sky
+            const sky = new THREE.Sky();
+            sky.scale.setScalar(200);
+            sky.name = 'Sky';
+            scene.add(sky);
+            // Add Sun Helper
+            const sunSphere = new THREE.Mesh(
+                new THREE.SphereBufferGeometry(20000, 16, 8),
+                new THREE.MeshBasicMaterial({
+                    color: 0xffffff
+                })
+            );
+            sunSphere.position.y = 700000;
+            sunSphere.visible = false;
+            scene.add(sunSphere);
+            const effectController = {
+                turbidity: 10,
+                rayleigh: 2,
+                mieCoefficient: 0.005,
+                mieDirectionalG: 0.8,
+                luminance: 1,
+                inclination: 0.49, // elevation / inclination
+                azimuth: 0.25, // Facing front,
+                sun: !true
+            };
+            const distance = 400000;
+            const uniforms = sky.material.uniforms;
+            uniforms["turbidity"].value = effectController.turbidity;
+            uniforms["rayleigh"].value = effectController.rayleigh;
+            uniforms["luminance"].value = effectController.luminance;
+            uniforms["mieCoefficient"].value = effectController.mieCoefficient;
+            uniforms["mieDirectionalG"].value = effectController.mieDirectionalG;
+            const theta = Math.PI * (effectController.inclination - 0.5);
+            const phi = 2 * Math.PI * (effectController.azimuth - 0.5);
+            sunSphere.position.x = distance * Math.cos(phi);
+            sunSphere.position.y = distance * Math.sin(phi) * Math.sin(theta);
+            sunSphere.position.z = distance * Math.sin(phi) * Math.cos(theta);
+            sunSphere.visible = effectController.sun;
+            uniforms["sunPosition"].value.copy(sunSphere.position);
+        }
+        createSky();
+        // BALL CREATED
+        var ball;
+        var ball_geometry = new THREE.SphereGeometry(0.7, 20, 20, 0, Math.PI * 2, 0, Math.PI * 2);
+        var ball_material = new THREE.MeshStandardMaterial({
+            color: 0xFF0000,
+            //shading: THREE.FlatShading
+        })
+        ball = new THREE.Mesh(ball_geometry, ball_material);
+        //ball.receiveShadow = true;
+       // ball.castShadow = true;
+        ball.position.set(3.5, 6.5, 2);
+        scene.add(ball);
+        const geometry = new THREE.SphereBufferGeometry( 2, 32, 32 );
+        var p = 0;
+        var random = Math.floor((Math.random() * 6)-15 );
+        var sub, colm;
+        for (var d = 0; d < 1000; d++) {
+            track_geometry = new THREE.BoxBufferGeometry(10, 0, 12);
+            track_material = new THREE.MeshStandardMaterial({
+                color: 0xFF0000
+            });
+            track_array[d] = new THREE.Mesh(track_geometry, track_material);
+            track_array[d].position.set(3.5, 5, -14 * p);
+            p++;
+            scene.add(track_array[d]);
+            star_geometry = new THREE.ConeGeometry(1, 2, 8);
+            star_material = new THREE.MeshStandardMaterial({
+                color: 0x0000FF
+            });
+            star_array[d] = new THREE.Mesh(star_geometry, star_material);
+            star_array[d].position.set(Math.floor((Math.random() * 8) ), 7, -10     * p);
+            scene.add(star_array[d]);
+        }
+        //LIGHT ADDED
+        const light = new THREE.DirectionalLight(0x404040, 5);
+        scene.add(light);
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true
+        });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = false;
+        controls.campingFactor = 0.25;
+        controls.enableZoom = false;
+        controls.enablePan = false;
+ 
+        controls.minDistance = 10;
+        controls.maxDistance = 50;
+        renderer.render(scene, camera);
+        var xi = 1;
+        var clock = new THREE.Clock();
+        console.log(clock);
+        var time = 0;
+        var delta = 0;
+        function animate() {
+            for (var f = 0; f < 1000; f++) {
+                track_array[f].position.z += 0.139;
+                star_array[f].position.z += 0.139;
+            }
+            delta = clock.getDelta();
+            time += delta;
+            // ball.position.y = 6.5 + Math.abs(Math.sin(time * 5)) * 2;
+            // ball.rotation.x -= 0.185;
+            // //star touch 
+            firstBB = new THREE.Box3().setFromObject(ball);
+            secondBB = new THREE.Box3().setFromObject(star_array[0]);
+            collision = firstBB.isIntersectionBox(secondBB);
+            if (collision == true) {
+                var audio1 = document.createElement('audio');
+                var source1 = document.createElement('source');
+                source1.src = '/sound/star.mp3';
+                audio1.appendChild(source1);
+                audio1.play();
+                ball.material.color.set(0x0000ff);
+                setTimeout(myStopFunction,5000);
+                function myStopFunction(){
+                    var audio2 = document.createElement('audio');
+                    var source2 = document.createElement('source');
+                    source2.src = '/sound/oneup.mp3';
+                    audio2.appendChild(source2);
+                    audio2.play();
+                    ball.material.color.set(0xff0000);
+                   
+                }
+                      
+            }
+            scene.add(ball);
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        function onWindowResize() {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            camera.updateProjectionMatrix();
+        }
+        window.addEventListener('resize', onWindowResize);
+
+        function bounce(){
+
+ball.position.y = 6 + Math.abs(Math.sin(time * 5)) * 3;
+
+// setTimeout(function(){ball.position.set(0, 6, 2);},500) ;
+}
+var ballLefRight=0;
+function ballMoveLeft(){
+    var diff=0.1;
+    ballLefRight=ballLefRight-diff;
+    ball.position.set(ballLefRight, 6, 2);
+    if(ballLefRight<=-2){
+    alert("hello");
+    document.write("<h1>Game Over</h1>")
+}
+}
+function ballMoveRight(){
+    var diff=0.1;
+    ballLefRight=ballLefRight+diff;
+    ball.position.set(ballLefRight, 6, 2);
+    if(ballLefRight>=9){
+    alert("hello");
+    document.write("<h1>Game Over</h1>")
+}
+}
+
+document.body.onkeydown = function(e){
+    
+ switch (e.keyCode)
+ {
+     case 32:bounce();break;
+     
+     case 39:ballMoveRight();break;
+     case 37:ballMoveLeft();
+     
+ }
+}
+
+animate();
+        animate();
+    </script>
+
+</body>
+
+</html>
