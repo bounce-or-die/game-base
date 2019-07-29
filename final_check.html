@@ -1,0 +1,571 @@
+<html>
+<title>Bouncing Ball</title>
+
+<head>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Atma' rel='stylesheet'>
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://threejs.org/build/three.min.js"></script>
+    <script src="js/sky.js"></script>
+    <script src="js/OrbitControls.js"></script>
+    <script src="js/CustomEase.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/2.1.3/TweenMax.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/17.4.0/Tween.js"></script>
+    <script src="js/OBJLoader.js"></script>
+    <link src="index.html"></link>
+    <!-- <script src="/js/dat.gui.module.js"></script>  -->
+
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        
+        #container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .overlay {
+            position: absolute;
+            width: 100%;
+            height: auto;
+            background-color: rgba(24, 86, 179, 0.5);
+            ;
+            font-size: 40px;
+            color: white;
+            font-family: 'Atma';
+        }
+        /* alert styling is start from here */
+        /* The Modal (background) */
+        
+        .modal {
+            display: none;
+            /* Hidden by default */
+            position: fixed;
+            /* Stay in place */
+            z-index: 1;
+            /* Sit on top */
+            padding-top: 100px;
+            /* Location of the box */
+            left: 0;
+            top: 0;
+            width: 100%;
+            /* Full width */
+            height: 100%;
+            /* Full height */
+            overflow: auto;
+            /* Enable scroll if needed */
+            background-color: rgb(0, 0, 0);
+            /* Fallback color */
+            background-color: rgba(0, 0, 0, 0.4);
+            /* Black w/ opacity */
+        }
+        /* Modal Content */
+        
+        .modal-content {
+            position: relative;
+            background-color: #fefefe;
+            margin: auto;
+            padding: 0;
+            border: 1px solid #888;
+            width: 80%;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+            -webkit-animation-name: animatetop;
+            -webkit-animation-duration: 0.4s;
+            animation-name: animatetop;
+            animation-duration: 0.4s
+        }
+        /* Add Animation */
+        
+        @-webkit-keyframes animatetop {
+            from {
+                top: -300px;
+                opacity: 0
+            }
+            to {
+                top: 0;
+                opacity: 1
+            }
+        }
+        
+        @keyframes animatetop {
+            from {
+                top: -300px;
+                opacity: 0
+            }
+            to {
+                top: 0;
+                opacity: 1
+            }
+        }
+        /* The Close Button */
+        
+        .close {
+            color: white;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .modal-header {
+            padding: 2px 16px;
+            background-color: #3333cc;
+            color: white;
+        }
+        
+        .modal-body {
+            padding: 2px 16px;
+        }
+        
+        .modal-footer {
+            padding: 2px 16px;
+            background-color: #3333cc;
+            color: white;
+        }
+        /* alert styling is end  from here */
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <div class="overlay">
+            <div id="score"> </div>
+            <div id="scorebox" style="text-align-last: left">
+                Player Name:
+                <label id="que"></label>
+            </div>
+        </div>
+
+    </div>
+    <div id="myModal" class="modal">
+
+        <!-- Modal content -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close">&times;</span>
+                <h2 style="text-align:center;font-family: 'Atma';font-size:40px;">GAME OVER</h2>
+            </div>
+            <div class="modal-body">
+                <p id="scorecard" style="font-family: 'Atma';font-size:50px">Your Score is : </p>
+
+
+            </div>
+            <div class="modal-footer">
+
+                <button id="button" class="button" style="font-family: 'Atma';font-size:40px;align:right">
+                          RESTART</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.getElementById("que").innerHTML = sessionStorage.getItem("playername1");
+        var track_geometry, track_material;
+        var track_array = [];
+        var collision;
+        var collide_value = true;
+        var hurdle_geometry, hurdle_material;
+        var hurdle_array = [];
+        const container = document.getElementById('container');
+
+        var jump = true;
+        var score = 0;
+
+        // BACKGROUND SOUND
+        var audio = document.createElement('audio');
+        var source = document.createElement('source');
+        source.src = '/sound/play.mp3';
+        audio.appendChild(source);
+        audio.play();
+        // var source1 = document.createElement('source');
+        // source1.src = '/sound/out.mp3';
+        // audio.appendChild(source1);
+
+        // SCENE CFREATED
+        const scene = new THREE.Scene();
+        var sky, sunSphere;
+        scene.background = new THREE.Color('skyblue');
+        //CAMERA CREATED
+        const camera = new THREE.PerspectiveCamera(70, container.clientWidth / container.clientHeight, 0.01, 300);
+        camera.position.set(20, 10, -5);
+        // camera.rotateX(Math.PI / 4);
+        camera.rotateY(Math.PI / 2);
+
+        //bg
+
+
+        //light   ========================
+        var keyLight = new THREE.DirectionalLight(new THREE.Color('hsl(30, 100%, 75%)'), 1.0);
+        keyLight.position.set(-100, 0, 100);
+
+        var fillLight = new THREE.DirectionalLight(new THREE.Color('hsl(240, 100%, 75%)'), 0.75);
+        fillLight.position.set(100, 0, 100);
+
+        var backLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        backLight.position.set(100, 0, -100).normalize();
+
+        scene.add(keyLight);
+        scene.add(fillLight);
+        scene.add(backLight);
+
+
+
+
+        let loader = new THREE.TextureLoader();
+        //load an image
+        var material = new THREE.MeshBasicMaterial({
+            map: loader.load("clouds2.jpg")
+
+        });
+
+        //create a plane
+        var geo = new THREE.PlaneGeometry(100, 50);
+
+        //combine an image
+        var mesh = new THREE.Mesh(geo, material);
+        //set the position
+        mesh.position.set(0, 10, 0);
+
+        mesh.rotateY(Math.PI / 2);
+
+        //addthe msh
+
+        scene.add(mesh);
+
+
+
+
+        var star_mash1 = new THREE.Group();
+
+
+        var objLoader = new THREE.OBJLoader();
+        objLoader.setPath('/assets/');
+        objLoader.load('star.obj', function(object) {
+            star_mash1.add(object);
+        });
+
+        star_mash1.position.set(3.5, 12, -200)
+        star_mash1.rotateX(-Math.PI / 2);
+
+        scene.add(star_mash1);
+
+        var star_mash2 = new THREE.Group();
+
+
+        var objLoader1 = new THREE.OBJLoader();
+        objLoader1.setPath('/assets/');
+        objLoader1.load('star.obj', function(object) {
+            star_mash2.add(object);
+        });
+
+        star_mash2.position.set(3.5, 12, -800)
+        star_mash2.rotateX(-Math.PI / 2);
+        scene.add(star_mash2);
+
+
+
+
+
+        // BALL CREATED
+        var ball;
+        var ball_geometry = new THREE.SphereGeometry(0.7, 20, 20, 0, Math.PI * 2, 0, Math.PI * 2);
+        var ball_material = new THREE.MeshStandardMaterial({
+            color: 0xFF0000,
+            //shading: THREE.FlatShading
+        })
+        ball = new THREE.Mesh(ball_geometry, ball_material);
+        ball.position.set(3.5, 6.5, 2);
+        scene.add(ball);
+        const geometry = new THREE.SphereBufferGeometry(2, 32, 32);
+        var p = 0;
+        // var random = Math.floor((Math.random() * 6) - 15);
+        var sub, colm;
+
+        //GRASS TEXTURE LOADER
+        let grass = loader.load('grass.jpg');
+        for (var d = 0; d < 1000; d++) {
+            track_geometry = new THREE.BoxBufferGeometry(10, 0, 12);
+            track_material = new THREE.MeshBasicMaterial({
+                map: grass
+                    //color: 0xFF0000
+            });
+            track_array[d] = new THREE.Mesh(track_geometry, track_material);
+            track_array[d].position.set(3.5, 5, -12 * p);
+            p++;
+            scene.add(track_array[d]);
+            //hurdles.............
+            hurdle_geometry = new THREE.TetrahedronGeometry(2, 0);
+
+            // BRICK TEXTURE LOADER 
+            let brick = loader.load('texture.jpg');
+            hurdle_material = new THREE.MeshBasicMaterial({
+                map: brick
+                    //color: 0x0000FF
+            });
+
+            hurdle_array[d] = new THREE.Mesh(hurdle_geometry, hurdle_material);
+            hurdle_array[d].position.set(3.5, 6, -35 * p);
+            hurdle_array[d].rotation.z = 1.5;
+            hurdle_array[d].rotation.y = Math.PI / 3;
+            hurdle_array[d].rotation.x = .8;
+            scene.add(hurdle_array[d]);
+        }
+
+        // LIGHT ADDED
+        const light = new THREE.DirectionalLight(0x404040, 5);
+        scene.add(light);
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true
+        });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+        renderer.render(scene, camera);
+        var xi = 1;
+        var clock = new THREE.Clock();
+        console.log(clock);
+        var time = 0;
+        var delta = 0;
+        var i = 0;
+        var speed = 0.4;
+        var speedVector;
+
+        //=========================alert pop window of game over=================
+
+        var modal = document.getElementById("myModal");
+        var final_score = document.getElementById("scorecard");
+
+
+        // Get the <span> element that closes the modal
+        var span = document.getElementsByClassName("close")[0];
+
+
+        var btn = document.getElementById("button");
+
+
+
+        // When the user clicks the button, open the modal 
+        btn.onclick = function() {
+            window.location.href = "http://127.0.0.1:5502/check.html";
+        }
+
+
+        // When the user clicks the button, open the modal 
+
+        // When the user clicks on <span> (x), close the modal
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+
+
+
+
+
+        //========================**** ANIMATE FUNCTION****==========================
+        function animate() {
+
+            fn_score(score++);
+            speed++;
+            speedVector = speed / 10000;
+            for (var f = 0; f < 1000; f++) {
+                track_array[f].position.z += 0.239 + speedVector;
+                hurdle_array[f].position.z += 0.239 + speedVector;
+            }
+            star_mash1.position.z += 0.239;
+            star_mash2.position.z += 0.239;
+
+
+
+
+            star_mash1.rotation.z += 0.139;
+            star_mash2.rotation.z += 0.139;
+
+            delta = clock.getDelta();
+            time += delta;
+
+
+
+            hurdle_collision(collide_value);
+
+            star_collision();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            scene.add(ball);
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+
+        function star_collision() {
+
+
+
+            starcollision1 = new THREE.Box3().setFromObject(ball);
+            starcollision2 = new THREE.Box3().setFromObject(star_mash1);
+            if (star_mash1.position.z > ball.position.z) {
+
+                starcollision2 = new THREE.Box3().setFromObject(star_mash2);
+
+            }
+            collisionst = starcollision1.isIntersectionBox(starcollision2);
+            if (collisionst == true) {
+                var audiostar = document.createElement('audio');
+                var sourcestar = document.createElement('source');
+                sourcestar.src = '/sound/star.mp3';
+                audiostar.appendChild(sourcestar);
+                audiostar.play();
+
+                ball.material.color.set(0xFFD700);
+                collide_value = false;
+                // secondBB = new THREE.Box3().setFromObject(hurdle_array[1]);
+                setTimeout(myStopFunction, 30000);
+
+
+                function myStopFunction() {
+                    collide_value = true;
+                    var audiox = document.createElement('audio');
+                    var sourcex = document.createElement('source');
+                    sourcex.src = '/sound/oneup.mp3';
+                    audiox.appendChild(sourcex);
+                    audiox.play();
+                    ball.material.color.set(0xff0000);
+                }
+            }
+
+        }
+
+        function hurdle_collision(collide_value) {
+
+
+            firstBB = new THREE.Box3().setFromObject(ball);
+            secondBB = new THREE.Box3().setFromObject(hurdle_array[i]);
+
+
+            if (hurdle_array[i].position.z > ball.position.z) {
+                console.log(hurdle_array[i].position.z);
+                i++;
+                secondBB = new THREE.Box3().setFromObject(hurdle_array[i]);
+
+
+            }
+
+
+
+            collision = firstBB.isIntersectionBox(secondBB);
+            if (collision == true && collide_value == true) {
+                modal.style.display = "block";
+                score = score - 1;
+                final_score.innerHTML += " " + score;
+
+
+                cancelAnimationFrame();
+                var audio1 = document.createElement('audio');
+                var source1 = document.createElement('source');
+                source1.src = '/sound/star.mp3';
+                audio1.appendChild(source1);
+                audio1.play();
+
+
+            }
+
+
+
+
+        }
+
+
+
+
+
+        function onWindowResize() {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            camera.updateProjectionMatrix();
+        }
+        window.addEventListener('resize', onWindowResize);
+
+        // const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        // controls.enableDamping = false;
+        // controls.campingFactor = 0.25;
+        // controls.enableZoom = false;
+        // controls.enablePan = false;
+
+
+        document.body.onkeydown = function(e) {
+
+            switch (e.keyCode) {
+                case 32:
+                    bounce();
+                    break;
+
+                case 39:
+                    ballMoveRight();
+                    break;
+                case 37:
+                    ballMoveLeft();
+
+            }
+        }
+
+        // BOUNCE FUNCTION
+        var bouncespeed = 0;
+        var bspeed = 1;
+
+
+        function fn_score(score) {
+
+            var ty = document.getElementById("score");
+            ty.innerHTML = "your score is : " + score;
+
+        }
+
+
+        function bounce() {
+            bouncespeed++;
+            bouncespeed = bouncespeed / 500;
+            bspeed = bspeed - bouncespeed;
+            console.log(bspeed);
+
+            if (jump) {
+                console.log("hhhhhhh" + jump)
+                jump = false;
+                TweenLite.to(ball.position, bspeed, {
+                    ease: CustomEase.create("custom", "M0,0 C0.266,0.412 0.353,0.479 0.52,0.512 0.612,0.53 0.78,0 1,0"),
+                    y: 20,
+                    onComplete: () => {
+                        jump = true;
+                        console.log("jump");
+                    }
+                });
+
+            }
+        }
+        animate();
+    </script>
+</body>
+
+</html>
