@@ -3,7 +3,7 @@
     <title>Bouncing Ball</title>
     
      <head>
-    
+        <link rel="stylesheet" type="text/css" href="scene1.css">
          <meta name="viewport" content="width=device-width, initial-scale=1">
         <link href='https://fonts.googleapis.com/css?family=Atma' rel='stylesheet'>
     
@@ -20,123 +20,7 @@
         <link src="check.css"></link>
         <!-- <script src="/js/dat.gui.module.js"></script>  -->
     
-         <style>
-            body {
-                font-family: Arial, Helvetica, sans-serif;
-            }
-            
-            #container {
-                position: absolute;
-                width: 100%;
-                height: 100%;
-            }
-            
-            .overlay {
-                position: absolute;
-                width: 100%;
-                height: auto;
-                background-color: rgba(24, 86, 179, 0.5);
-                ;
-                font-size: 40px;
-                color: white;
-                font-family: 'Atma';
-            }
-            /* alert styling is start from here */
-            /* The Modal (background) */
-            
-            .modal {
-                display: none;
-                /* Hidden by default */
-                position: fixed;
-                /* Stay in place */
-                z-index: 1;
-                /* Sit on top */
-                padding-top: 100px;
-                /* Location of the box */
-                left: 0;
-                top: 0;
-                width: 100%;
-                /* Full width */
-                height: 100%;
-                /* Full height */
-                overflow: auto;
-                /* Enable scroll if needed */
-                background-color: rgb(0, 0, 0);
-                /* Fallback color */
-                background-color: rgba(0, 0, 0, 0.4);
-                /* Black w/ opacity */
-            }
-            /* Modal Content */
-            
-            .modal-content {
-                position: relative;
-                background-color: #fefefe;
-                margin: auto;
-                padding: 0;
-                border: 1px solid #888;
-                width: 80%;
-                box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-                -webkit-animation-name: animatetop;
-                -webkit-animation-duration: 0.4s;
-                animation-name: animatetop;
-                animation-duration: 0.4s
-            }
-            /* Add Animation */
-            
-            @-webkit-keyframes animatetop {
-                from {
-                    top: -300px;
-                    opacity: 0
-                }
-                to {
-                    top: 0;
-                    opacity: 1
-                }
-            }
-            
-            @keyframes animatetop {
-                from {
-                    top: -300px;
-                    opacity: 0
-                }
-                to {
-                    top: 0;
-                    opacity: 1
-                }
-            }
-            /* The Close Button */
-            
-            .close {
-                color: white;
-                float: right;
-                font-size: 28px;
-                font-weight: bold;
-            }
-            
-            .close:hover,
-            .close:focus {
-                color: #000;
-                text-decoration: none;
-                cursor: pointer;
-            }
-            
-            .modal-header {
-                padding: 2px 16px;
-                background-color: #3333cc;
-                color: white;
-            }
-            
-            .modal-body {
-                padding: 2px 16px;
-            }
-            
-            .modal-footer {
-                padding: 2px 16px;
-                background-color: #3333cc;
-                color: white;
-            }
-            /* alert styling is end  from here */
-        </style>
+         
     </head>
     
      <body>
@@ -256,7 +140,7 @@
             scene.add(ball);
             const geometry = new THREE.SphereBufferGeometry(2, 32, 32);
             let p = 0;
-            let sub, colm;
+            // let sub, colm;
 
              //GRASS TEXTURE LOADER
             let grass = loader.load('grass.jpg');
@@ -296,13 +180,13 @@
             container.appendChild(renderer.domElement);
             renderer.render(scene, camera);
             let xi = 1;
-            let clock = new THREE.Clock();
-            console.log(clock);
-            let time = 0;
-            let delta = 0;
-            let i = 0;
-            let speed = 0.4;
-            let speedVector;
+            // let clock = new THREE.Clock();
+            // console.log(clock);
+            // let time = 0;
+            // let delta = 0;
+             let i = 0;
+             let speed = 0.4;
+             let speedVector;
              //=========================alert pop window of game over=================
              let modal = document.getElementById("myModal");
             let final_score = document.getElementById("scorecard");
@@ -321,6 +205,8 @@
              //========================**** ANIMATE FUNCTION****==========================
             function animate() {
                  fn_score(score++);
+               
+               // control the hurdle and ball speed //
                 speed++;
                 speedVector = speed / 10000;
                 for (let f = 0; f < 1000; f++) {
@@ -331,13 +217,13 @@
                 star_mash2.position.z += 0.239;
                  star_mash1.rotation.z += 0.139;
                 star_mash2.rotation.z += 0.139;
-                 delta = clock.getDelta();
-                time += delta;
+                //  delta = clock.getDelta();
+                // time += delta;
                  hurdle_collision(collide_value);
                  star_collision();
                  scene.add(ball);
-                requestAnimationFrame(animate);
-                renderer.render(scene, camera);
+                    requestAnimationFrame(animate);
+                    renderer.render(scene, camera);
             }
              function star_collision() {
                  starcollision1 = new THREE.Box3().setFromObject(ball);
@@ -403,11 +289,11 @@
                     case 32:
                         bounce();
                         break;
-                     case 39:
-                        ballMoveRight();
-                        break;
-                    case 37:
-                        ballMoveLeft();
+                    //  case 39:
+                    //     ballMoveRight();
+                    //     break;
+                    // case 37:
+                    //     ballMoveLeft();
                  }
             }
              // BOUNCE FUNCTION
