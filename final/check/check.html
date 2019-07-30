@@ -1,0 +1,464 @@
+<html>
+<title>Bouncing Ball</title>
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://threejs.org/build/three.min.js"></script>
+    <script src="js/sky.js"></script>
+    <script src="js/OrbitControls.js"></script>
+    <script src="js/CustomEase.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/2.1.3/TweenMax.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/17.4.0/Tween.js"></script>
+    <script src="js/OBJLoader.js"></script>
+    <link src="index.html"></link>
+    <!-- <script src="/js/dat.gui.module.js"></script>  -->
+
+    <style>
+        #container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        .overlay{ 
+            position: absolute;
+            width:auto;
+            height:auto;
+             background-color: rgba(24, 86, 179, 0.5);  ;
+             font-size: 40px;
+             color: white; 
+             font-family: 'Atma';
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <div class="overlay"  > 
+            <div>Your Score Is: </div>
+                <div id="scorebox" style="text-align-last: right"> 
+                    Player Name: 
+                    <label id="que"></label>
+                </div>
+            </div>
+         </div>
+    </div>
+
+    <script>
+        document.getElementById("que").innerHTML = sessionStorage.getItem("playername1");
+        var track_geometry, track_material;
+        var track_array = [];
+        var collision;
+        var star_geometry, star_material;
+        var star_array = [];
+        const container = document.getElementById('container');
+        
+        var jump = true;
+
+        // BACKGROUND SOUND
+        var audio = document.createElement('audio');
+        var source = document.createElement('source');
+        source.src = '/sound/play.mp3';
+        audio.appendChild(source);
+        audio.play();
+        // var source1 = document.createElement('source');
+        // source1.src = '/sound/out.mp3';
+        // audio.appendChild(source1);
+        
+        // SCENE CFREATED
+        const scene = new THREE.Scene();
+        var sky, sunSphere;
+        scene.background = new THREE.Color('skyblue');
+        //CAMERA CREATED
+        const camera = new THREE.PerspectiveCamera(70, container.clientWidth / container.clientHeight, 0.01, 300);
+        camera.position.set(20, 10, -5);
+        // camera.rotateX(Math.PI / 4);
+        camera.rotateY(Math.PI / 2);
+
+        //bg
+
+        let loader = new THREE.TextureLoader();
+         //load an image
+         var material = new THREE.MeshBasicMaterial({
+             map: loader.load("clouds2.jpg")
+
+         });
+
+         //create a plane
+       var   geo = new THREE.PlaneGeometry(100, 50);
+
+         //combine an image
+         var mesh = new THREE.Mesh(geo, material);
+         //set the position
+          mesh.position.set(0,10,0);
+          mesh.rotateY(Math.PI/2);
+
+          //addthe msh
+          scene.add(mesh);
+
+
+          var mmmash = new THREE.Group();
+
+
+            var objLoader = new THREE.OBJLoader();
+            objLoader.setPath('/assets/');
+            objLoader.load('star.obj', function(object) {
+             mmmash.add(object);
+            });
+
+            mmmash.position.set(0, 12, -10)
+            mmmash.rotateX(-Math.PI / 3.5);
+            scene.add(mmmash);
+
+
+            var mmmash = new THREE.Group();
+            var objLoader = new THREE.OBJLoader();
+
+            objLoader.setPath('/assets/');
+            objLoader.load('star.obj', function(object) {
+            mmmash.add(object);
+
+                });
+                mmmash.position.set(0, 12, -10)
+                mmmash.rotateX(-Math.PI / 3.5);
+                scene.add(mmmash);
+     
+        // BALL CREATED
+        var ball;
+        var ball_geometry = new THREE.SphereGeometry(0.7, 20, 20, 0, Math.PI * 2, 0, Math.PI * 2);
+        var ball_material = new THREE.MeshStandardMaterial({
+            color: 0xFF0000,
+            //shading: THREE.FlatShading
+        })
+        ball = new THREE.Mesh(ball_geometry, ball_material);
+        ball.position.set(3.5, 6.5, 2);
+        scene.add(ball);
+        const geometry = new THREE.SphereBufferGeometry( 2, 32, 32 );
+        var p = 0;
+        var random = Math.floor((Math.random() * 6)-15 );
+        var sub, colm;
+
+        //GRASS TEXTURE LOADER
+      let grass = loader.load('grass.jpg');
+        for (var d = 0; d < 1000; d++) {
+            track_geometry = new THREE.BoxBufferGeometry(10, 0, 12);
+            track_material = new THREE.MeshBasicMaterial({map:grass
+                //color: 0xFF0000
+            });
+            track_array[d] = new THREE.Mesh(track_geometry, track_material);
+            track_array[d].position.set(3.5, 5, -12 * p);
+            p++;
+            scene.add(track_array[d]);
+            //hurdles.............
+            star_geometry = new THREE.TetrahedronGeometry(2, 0);
+
+          // BRICK TEXTURE LOADER 
+        let brick = loader.load('texture.jpg');
+        star_material = new THREE.MeshBasicMaterial({map:brick
+                //color: 0x0000FF
+            });
+      
+           star_array[d] =new THREE.Mesh(star_geometry,star_material);
+           star_array[d].position.set(3.5, 6, -14 * p);
+            star_array[d].rotation.z=1.5;
+            star_array[d].rotation.y=Math.PI/3;
+            star_array[d].rotation.x=.8;
+            scene.add(star_array[d]);
+        }
+
+        // LIGHT ADDED
+        const light = new THREE.DirectionalLight(0x404040, 5);
+        scene.add(light);
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true
+        });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+        renderer.render(scene, camera);
+        var xi = 1;
+        var clock = new THREE.Clock();
+        console.log(clock);
+        var time = 0;
+        var delta = 0;
+        var i=0;
+        var speed = 0.4;
+        var speedVector;
+
+        // ANIMATE FUNCTION
+        function animate() {
+            speed++;
+            speedVector = speed / 10000;
+            for (var f = 0; f < 1000; f++) {
+                track_array[f].position.z += 0.239+speedVector;
+                star_array[f].position.z += 0.239+speedVector;
+            }
+            delta = clock.getDelta();
+            time += delta;
+            
+            // COLLISION FOR BOXES
+            firstBB = new THREE.Box3().setFromObject(ball);
+            secondBB = new THREE.Box3().setFromObject(star_array[0]);
+            collision = firstBB.isIntersectionBox(secondBB);
+           if(collision==true){
+            var audio1 = document.createElement('audio');
+                var source1 = document.createElement('source');
+                source1.src = '/sound/star.mp3';
+                audio1.appendChild(source1);
+                audio1.play();
+               alert("hello");
+            
+           }
+           firstBB1 = new THREE.Box3().setFromObject(ball);
+            secondBB1 = new THREE.Box3().setFromObject(star_array[1]);
+            collision1 = firstBB1.isIntersectionBox(secondBB1);
+           if(collision1==true){
+            var audio2 = document.createElement('audio');
+                var source2 = document.createElement('source');
+                source2.src = '/sound/star.mp3';
+                audio2.appendChild(source2);
+                audio2.play();
+               alert("game over");
+           }
+           firstBB2 = new THREE.Box3().setFromObject(ball);
+            secondBB2 = new THREE.Box3().setFromObject(star_array[2]);
+            collision2 = firstBB2.isIntersectionBox(secondBB2);
+           if(collision2==true){
+                var audio3 = document.createElement('audio');
+                var source3 = document.createElement('source');
+                source3.src = '/sound/star.mp3';
+                audio3.appendChild(source3);
+                audio3.play();
+               alert("game over");
+           }
+           firstBB3 = new THREE.Box3().setFromObject(ball);
+            secondBB3 = new THREE.Box3().setFromObject(star_array[3]);
+            collision3 = firstBB3.isIntersectionBox(secondBB3);
+           if(collision3==true){
+                var audio4 = document.createElement('audio');
+                var source4 = document.createElement('source');
+                source4.src = '/sound/star.mp3';
+                audio4.appendChild(source4);
+                audio4.play();
+                   alert("game over");
+           }
+           firstBB4 = new THREE.Box3().setFromObject(ball);
+            secondBB4 = new THREE.Box3().setFromObject(star_array[4]);
+            collision4 = firstBB4.isIntersectionBox(secondBB4);
+           if(collision4==true){
+            var audio5 = document.createElement('audio');
+                var source5 = document.createElement('source');
+                source5.src = '/sound/star.mp3';
+                audio5.appendChild(source5);
+                audio5.play();
+               alert("game over");
+           }
+           firstBB5 = new THREE.Box3().setFromObject(ball);
+            secondBB5 = new THREE.Box3().setFromObject(star_array[5]);
+            collision5 = firstBB5.isIntersectionBox(secondBB5);
+           if(collision5==true){
+            var audio6 = document.createElement('audio');
+                var source6 = document.createElement('source');
+                source6.src = '/sound/star.mp3';
+                audio6.appendChild(source6);
+                audio6.play();
+               alert("game over");
+           }
+           firstBB6 = new THREE.Box3().setFromObject(ball);
+            secondBB6 = new THREE.Box3().setFromObject(star_array[6]);
+            collision6 = firstBB6.isIntersectionBox(secondBB6);
+           if(collision6==true){
+            var audio7 = document.createElement('audio');
+                var source7 = document.createElement('source');
+                source7.src = '/sound/star.mp3';
+                audio7.appendChild(source7);
+                audio7.play();
+               alert("game over");
+           }
+           firstBB7 = new THREE.Box3().setFromObject(ball);
+            secondBB7 = new THREE.Box3().setFromObject(star_array[7]);
+            collision7 = firstBB7.isIntersectionBox(secondBB7);
+           if(collision7==true){
+            var audio8 = document.createElement('audio');
+                var source8 = document.createElement('source');
+                source8.src = '/sound/star.mp3';
+                audio8.appendChild(source8);
+                audio8.play();
+               alert("game over");
+           }
+           firstBB8 = new THREE.Box3().setFromObject(ball);
+            secondBB8 = new THREE.Box3().setFromObject(star_array[8]);
+            collision8 = firstBB8.isIntersectionBox(secondBB8);
+           if(collision8==true){
+            var audio9 = document.createElement('audio');
+                var source9 = document.createElement('source');
+                source9.src = '/sound/star.mp3';
+                audio9.appendChild(source9);
+                audio9.play();
+               alert("game over");
+           }
+           firstBB9 = new THREE.Box3().setFromObject(ball);
+            secondBB9 = new THREE.Box3().setFromObject(star_array[9]);
+            collision9 = firstBB9.isIntersectionBox(secondBB9);
+           if(collision9==true){
+               alert("game over");
+           }
+           firstBB10 = new THREE.Box3().setFromObject(ball);
+            secondBB10 = new THREE.Box3().setFromObject(star_array[10]);
+            collision10 = firstBB10.isIntersectionBox(secondBB10);
+           if(collision10==true){
+               alert("game over");
+           }
+           firstBB11 = new THREE.Box3().setFromObject(ball);
+            secondBB11 = new THREE.Box3().setFromObject(star_array[11]);
+            collision11 = firstBB11.isIntersectionBox(secondBB11);
+           if(collision11==true){
+               alert("game over");
+           }
+           firstBB12 = new THREE.Box3().setFromObject(ball);
+            secondBB12 = new THREE.Box3().setFromObject(star_array[12]);
+            collision12 = firstBB12.isIntersectionBox(secondBB12);
+           if(collision12==true){
+               alert("game over");
+           }
+           firstBB13 = new THREE.Box3().setFromObject(ball);
+            secondBB13 = new THREE.Box3().setFromObject(star_array[13]);
+            collision13 = firstBB13.isIntersectionBox(secondBB13);
+           if(collision13==true){
+               alert("game over");
+           }
+           firstBB14 = new THREE.Box3().setFromObject(ball);
+            secondBB14 = new THREE.Box3().setFromObject(star_array[14]);
+            collision14 = firstBB14.isIntersectionBox(secondBB14);
+           if(collision14==true){
+               alert("game over");
+           }
+           firstBB15 = new THREE.Box3().setFromObject(ball);
+            secondBB15 = new THREE.Box3().setFromObject(star_array[15]);
+            collision15 = firstBB15.isIntersectionBox(secondBB15);
+           if(collision15==true){
+               alert("game over");
+           }
+           firstBB16 = new THREE.Box3().setFromObject(ball);
+            secondBB16 = new THREE.Box3().setFromObject(star_array[16]);
+            collision16 = firstBB16.isIntersectionBox(secondBB16);
+           if(collision16==true){
+               alert("game over");
+           }
+           firstBB17= new THREE.Box3().setFromObject(ball);
+            secondBB17= new THREE.Box3().setFromObject(star_array[17]);
+            collision17 = firstBB14.isIntersectionBox(secondBB17);
+           if(collision17==true){
+               alert("game over");
+           }
+           firstBB18 = new THREE.Box3().setFromObject(ball);
+            secondBB18 = new THREE.Box3().setFromObject(star_array[18]);
+            collision18 = firstBB18.isIntersectionBox(secondBB18);
+           if(collision18==true){
+               alert("game over");
+           }
+           firstBB19= new THREE.Box3().setFromObject(ball);
+            secondBB19 = new THREE.Box3().setFromObject(star_array[19]);
+            collision19 = firstBB19.isIntersectionBox(secondBB19);
+           if(collision19==true){
+               alert("game over");
+           }
+           firstBB20= new THREE.Box3().setFromObject(ball);
+            secondBB20 = new THREE.Box3().setFromObject(star_array[20]);
+            collision20 = firstBB20.isIntersectionBox(secondBB20);
+           if(collision20==true){
+               alert("game over");
+            }
+             firstBB21= new THREE.Box3().setFromObject(ball);
+            secondBB21 = new THREE.Box3().setFromObject(star_array[21]);
+            collision21= firstBB21.isIntersectionBox(secondBB21);
+           if(collision21==true){
+               alert("game over");
+           }
+           firstBB22= new THREE.Box3().setFromObject(ball);
+            secondBB22 = new THREE.Box3().setFromObject(star_array[22]);
+            collision22= firstBB22.isIntersectionBox(secondBB22);
+           if(collision22==true){
+               alert("game over");
+            }
+            firstBB23= new THREE.Box3().setFromObject(ball);
+            secondBB23 = new THREE.Box3().setFromObject(star_array[23]);
+            collision23 = firstBB23.isIntersectionBox(secondBB23);
+           if(collision23==true){
+               alert("game over");
+            }
+            firstBB24= new THREE.Box3().setFromObject(ball);
+            secondBB24 = new THREE.Box3().setFromObject(star_array[24]);
+            collision24= firstBB24.isIntersectionBox(secondBB24);
+           if(collision24==true){
+               alert("game over");
+            } 
+            firstBB25= new THREE.Box3().setFromObject(ball);
+            secondBB25= new THREE.Box3().setFromObject(star_array[25]);
+            collision25 = firstBB25.isIntersectionBox(secondBB25);
+           if(collision25==true){
+               alert("game over");
+           }
+           
+            starcollision1= new THREE.Box3().setFromObject(ball);
+            starcollision2= new THREE.Box3().setFromObject(mmmash);
+            collisionst = starcollision1.isIntersectionBox(starcollision2);
+            if (collisionst == true) {
+                var audio1 = document.createElement('audio');
+                var source1 = document.createElement('source');
+                source1.src = '/sound/star.mp3';
+                audio1.appendChild(source1);
+                audio1.play();
+                ball.material.color.set(0x0000ff);
+                secondBB=new THREE.Box3().setFromObject(star_array[1]);
+                setTimeout(myStopFunction,5000);
+
+
+                function myStopFunction(){
+                    var audio2 = document.createElement('audio');
+                    var source2 = document.createElement('source');
+                    source2.src = '/sound/oneup.mp3';
+                    audio2.appendChild(source2);
+                    audio2.play();
+                    ball.material.color.set(0xff0000);           
+                }
+                }
+           
+            scene.add(ball);
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        function onWindowResize() {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            camera.updateProjectionMatrix();
+        }
+        window.addEventListener('resize', onWindowResize);
+        function bounce(){
+ball.position.y = 6 + Math.abs(Math.sin(time * 5)) * 3;
+}
+document.body.onkeydown = function(e){
+    
+ switch (e.keyCode)
+ {
+     case 32:bounce();break;         
+ }
+}
+// BOUNCE FUNCTION
+function bounce() {
+            if (jump) {
+                console.log("JUMP" + jump)
+                jump = false;
+                TweenLite.to(ball.position, 0.8, {
+                    ease: CustomEase.create("custom", "M0,0 C0.266,0.412 0.353,0.479 0.52,0.512 0.612,0.53 0.78,0 1,0"),
+                    y: 20,
+                    onComplete: () => {
+                        jump = true;
+                        console.log("jump");
+                    }
+                });
+
+            }}
+animate();
+   
+</script>
+</body>
+</html>
